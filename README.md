@@ -12,7 +12,6 @@ Open `index.html` in a browser, or run `python -m http.server 8000` from this di
 - Pitch: aim with pointer or arrow keys, choose 1–3, then Space or Throw.
 - Super: E when the meter is full, before a pitch.
 - Pause: P or Escape.
-- Sound: toggle synthesized arcade effects.
 
 ## Publish with GitHub Pages
 
@@ -25,3 +24,5 @@ Activation randomly chooses Fire/Thunder/Meteor Bat or Ghost/Tornado/Frost Ball.
 A ball completely outside the strike-zone rectangle, including its 21-pixel plate radius, always produces a swing and miss. A ball touching an edge remains hittable. This rule applies to both batters and overrides batting powers.
 
 Normal pitches released in the accuracy meter’s red sections drift more than green-section releases. Pitches touching any edge of the zone count as strikes when taken; fully outside pitches count as balls when taken and strikes when swung at.
+
+All-star difficulty reduces ordinary player hit probability by 33% and increases ordinary CPU hit probability by 33%, compared with the same pitch and timing rules without the modifier. Runs result from those hits and normal runner advancement; aggregate run totals are not fixed to a percentage. Rookie and power-up odds are unchanged.

@@ -74,13 +74,13 @@
   /* Reserve feedback space so new play results cannot resize the field. */
     #status { width:min(880px,100%); min-height:2.8em; height:2.8em; line-height:1.4; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
     /* Keep the field size stable as meter percentages and power names change. */
-    .toolbar[aria-label="Game controls"] { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:36px 36px; gap:6px; }
+    .toolbar[aria-label="Game controls"] { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:36px 36px; gap:6px; }
     .toolbar[aria-label="Game controls"] > button { min-width:0; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:4px 6px; }
     #pitches { grid-column:1 / -1; display:flex; gap:6px; justify-content:center; }
     #pitches[hidden] { display:none; }
     #pitches button { min-width:0; padding:4px 8px; }
   @media (min-width:920px) {
-      .toolbar[aria-label="Game controls"] { grid-template-columns:130px 155px 100px 95px minmax(0,1fr); grid-template-rows:36px; }
+      .toolbar[aria-label="Game controls"] { grid-template-columns:130px 155px 100px minmax(0,1fr); grid-template-rows:36px; }
       #pitches { grid-column:auto; }
     }
   </style>
@@ -96,12 +96,12 @@
 </div>
 <div id="field-slot"><div id="game-container"><canvas id="gameCanvas" width="960" height="540" role="img" aria-label="Baseball field. Use the controls below or press Space to swing."></canvas></div></div>
 <div class="toolbar" aria-label="Game controls">
-<button id="action">Swing / Throw</button><button id="super">Random super · E</button><button id="pause">Pause · P</button><button id="sound">Sound: on</button>
+<button id="action">Swing / Throw</button><button id="super">Random super · E</button><button id="pause">Pause · P</button>
 <span id="pitches"><button data-pitch="1">1 Fastball</button> <button data-pitch="2">2 Curve</button> <button data-pitch="3">3 Changeup</button></span>
 </div>
 <p id="status" role="status" aria-live="polite">Your big-league adventure starts here — pick an all-star!</p>
 <div id="instructions-bar">Swing: <span>Space / tap field / Swing button</span> · Super: <span>E</span> · Pause: <span>P / Esc</span></div>
-<details><summary>How to play</summary><p>Play three innings against the CPU, with extra innings for ties. Every at-bat starts with one ball and one strike: two more strikes make an out; three more balls earn a walk. Three outs switch sides.</p><p>Your away team bats in the top half; your home team bats in the bottom half. To pitch: aim with your pointer or arrow keys, choose a pitch with 1–3, then throw when the accuracy marker is centered; the red zone reduces accuracy. To bat: press Space, tap the field, or use Swing when the timing ring turns green. Hits advance runners automatically. Good plays charge your super meter; E randomly arms one of three batting or pitching powers before the next pitch. P pauses. Sound toggles the arcade sound effects.</p></details>
+<details><summary>How to play</summary><p>Play three innings against the CPU, with extra innings for ties. Every at-bat starts with one ball and one strike: two more strikes make an out; three more balls earn a walk. Three outs switch sides.</p><p>Your away team bats in the top half; your home team bats in the bottom half. To pitch: aim with your pointer or arrow keys, choose a pitch with 1–3, then throw when the accuracy marker is centered; the red zone reduces accuracy. To bat: press Space, tap the field, or use Swing when the timing ring turns green. Hits advance runners automatically. Good plays charge your super meter; E randomly arms one of three batting or pitching powers before the next pitch. P pauses.</p></details>
 
 <dialog id="team-choice" aria-labelledby="team-choice-title">
   <h2 id="team-choice-title">Choose your side</h2>
@@ -121,7 +121,7 @@
     <li><strong>Batting:</strong> Press Space, tap the field, or use Swing. Watch the pitch and swing when the timing ring turns green. Let pitches fully outside the zone pass; any pitch touching the zone counts as a strike if taken. Runners advance automatically.</li>
     <li><strong>Pitching:</strong> Aim with your pointer or arrow keys. Choose Fastball, Curve, or Changeup with the buttons or keys 1–3. Press Space or Throw when the accuracy marker is centered; red-zone releases are less accurate.</li>
     <li><strong>Super powers:</strong> Good plays charge your meter. When full, press E or the super button before a pitch. Batting randomly arms a Fire, Thunder, or Meteor Bat for a powered hit. Pitching randomly arms a Ghost, Tornado, or Frost Ball that homes into the zone. Swings fully outside the zone always miss; a batting power is consumed on your swing. If both sides use a power on the same pitch, the pitching power decides the outcome.</li>
-    <li><strong>Pause and sound:</strong> Press P or Escape, or use Pause. Sound toggles arcade effects.</li>
+    <li><strong>Pause:</strong> Press P or Escape, or use Pause.</li>
   </ul>
   <div class="guide-actions"><button id="guide-back">Change side</button><button id="guide-start">Start game</button></div>
 </dialog>
@@ -140,98 +140,6 @@ const METER_GAIN_HIT         = 20;    // Momentum gained on a base hit (%)
 const METER_GAIN_HOMERUN     = 50;    // Momentum gained on a Home Run (%)
 const CPU_SWING_ACCURACY     = 0.60;  // How often CPU swings at strikes (0.0 to 1.0)
 const CPU_CHASE_RATE         = 0.38;  // How often CPU chases balls outside strike zone
-
-/* ==========================================================================
-   AUDIO SYNTHESIZER (Web Audio API)
-   ========================================================================== */
-class SoundEngine {
-  constructor() {
-    this.ctx = null;
-    this.muted = false;
-  }
-  init() {
-    if (!this.ctx) {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      this.ctx = new AudioCtx();
-    }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
-    }
-  }
-  playBatHit(isSuper = false) {
-    if (!this.ctx || this.muted) return;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = isSuper ? 'sawtooth' : 'triangle';
-    osc.frequency.setValueAtTime(isSuper ? 380 : 260, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(60, this.ctx.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.6, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.18);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start();
-    osc.stop(this.ctx.currentTime + 0.2);
-  }
-  playPitchThrow() {
-    if (!this.ctx || this.muted) return;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(180, this.ctx.currentTime);
-    osc.frequency.linearRampToValueAtTime(360, this.ctx.currentTime + 0.12);
-    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.14);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start();
-    osc.stop(this.ctx.currentTime + 0.15);
-  }
-  playCatch() {
-    if (!this.ctx || this.muted) return;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(140, this.ctx.currentTime);
-    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start();
-    osc.stop(this.ctx.currentTime + 0.09);
-  }
-  playFanfare() {
-    if (!this.ctx || this.muted) return;
-    const notes = [261.6, 329.6, 392.0, 523.3];
-    notes.forEach((freq, i) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.value = freq;
-      const start = this.ctx.currentTime + i * 0.08;
-      gain.gain.setValueAtTime(0.3, start);
-      gain.gain.exponentialRampToValueAtTime(0.01, start + 0.25);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(start);
-      osc.stop(start + 0.28);
-    });
-  }
-  playWhistle() {
-    if (!this.ctx || this.muted) return;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(700, this.ctx.currentTime);
-    osc.frequency.linearRampToValueAtTime(950, this.ctx.currentTime + 0.2);
-    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.22);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start();
-    osc.stop(this.ctx.currentTime + 0.23);
-  }
-}
-const sound = new SoundEngine();
 
 /* ==========================================================================
    CHARACTERS ROSTER (5 Distinct Cartoon Athletes)
@@ -389,10 +297,13 @@ function ballFullyOutsideZone() {
   const nearestY = Math.max(STRIKE_ZONE.y, Math.min(STRIKE_ZONE.y + STRIKE_ZONE.h, y));
   return Math.hypot(x - nearestX, y - nearestY) > r;
 }
+let resolvingPower = false;
 function poweredContact(result, isCpu, power) {
   startPowerEffect(power);
-  sound.playBatHit(true); triggerScreenShake(9);
-  initiateHitTrajectory(result === "GROUND_OUT" ? "GROUND_OUT" : "SOLID_HIT", isCpu, ball.z - 1);
+  triggerScreenShake(9);
+  resolvingPower = true;
+  try { initiateHitTrajectory(result === "GROUND_OUT" ? "GROUND_OUT" : "SOLID_HIT", isCpu, ball.z - 1); }
+  finally { resolvingPower = false; }
   ball.hitResultType = result;
   ball.visualPower = power;
   if (result === "HOME_RUN" || result === "EXTRA_BASE") {
@@ -403,7 +314,7 @@ function poweredContact(result, isCpu, power) {
 }
 function resolveSuperPitch(isCpu) {
   batterSwung = true; batterSwingState = .01;
-  if (ball.superOutcome === "MISS") { sound.playCatch(); return; }
+  if (ball.superOutcome === "MISS") { return; }
   poweredContact(ball.superOutcome, isCpu, ball.power);
 }
 
@@ -502,14 +413,12 @@ canvas.addEventListener("pointermove", updatePointer);
 canvas.addEventListener("pointerdown", (e) => {
   if (e.button !== 0) return;
   updatePointer(e);
-  sound.init();
   handlePrimaryAction();
 });
 
 window.addEventListener("keydown", (e) => {
   if (e.target.matches("button, select, input, summary")) return;
   if (e.repeat) return;
-  sound.init();
   if (e.code === "Enter" && gameState === State.SELECT_CHAR) { openTeamChoice(); return; }
   if (gameState === State.PITCHING_AIM && e.code.startsWith("Arrow")) {
     e.preventDefault();
@@ -598,7 +507,6 @@ function triggerSuper() {
     superActive = true;
     activePower = randomPower(isPlayerPitching() ? "pitching" : "batting");
     playerMeter = 0;
-    sound.playFanfare();
     showBanner(`${activePower.symbol} ${activePower.name.toUpperCase()}!`, "Random power armed for the next play!", 45);
   }
 }
@@ -706,8 +614,6 @@ function pitchDrift(meterValue, random = Math.random) {
 }
 function lockPitchAndThrow() {
   totalPitches++;
-  sound.playPitchThrow();
-
   const {x: driftX, y: driftY} = pitchDrift(pitchMeterVal);
 
   const targetX = pitchAimPos.x + driftX;
@@ -722,8 +628,6 @@ function lockPitchAndThrow() {
 function cpuThrowPitch() {
   if (gameState !== State.PITCHING_READY || isPaused) return;
   totalPitches++;
-  sound.playPitchThrow();
-
   const pTypes = [PITCH_TYPES.FASTBALL, PITCH_TYPES.CURVEBALL, PITCH_TYPES.CHANGEUP];
   const type = pTypes[Math.floor(Math.random() * pTypes.length)];
   const useSuper = (cpuMeter >= 100 && Math.random() < 0.4);
@@ -769,6 +673,7 @@ function launchBall(targetX, targetY, type, isSuper, pitcher) {
   ball.speed = baseSpeed * (document.getElementById("difficulty").value === "rookie" ? 0.72 : 1);
 
   ball.cpuTiming = 0.72 + Math.random() * 0.46;
+  ball.cpuResolved = false;
 
   ball.isStrike = !ballFullyOutsideZone();
   if (ball.power) startPowerEffect(ball.power);
@@ -787,7 +692,7 @@ function swingBat() {
   if (armed) { superActive = false; activePower = null; startPowerEffect(power); }
   if (ballFullyOutsideZone()) {
     lastTiming = "Outside the zone — swing and miss";
-    sound.playCatch(); return;
+    return;
   }
   if (ball.isSuper) { resolveSuperPitch(false); return; }
   if (armed) {
@@ -801,68 +706,72 @@ function swingBat() {
   const contactMod = playerChar.contactSize;
 
   if (msError < SWING_WINDOW_PERFECT * contactMod) {
-    sound.playBatHit(true);
     triggerScreenShake(12);
     superActive = false;
     initiateHitTrajectory("PERFECT", false, ball.z - 1.0);
   } else if (msError < SWING_WINDOW_GOOD * contactMod) {
-    sound.playBatHit(false);
     triggerScreenShake(5);
     const isLineOut = false;
     initiateHitTrajectory(isLineOut ? "LINE_OUT" : "SOLID_HIT", false, ball.z - 1.0);
   } else if (msError < SWING_WINDOW_POOR * contactMod) {
     // Poor timing: weak grounder or lazy pop-up -> OUT
-    sound.playBatHit(false);
     triggerScreenShake(3);
     const outType = (ball.z > 1.0) ? "GROUND_OUT" : "FLY_OUT";
     initiateHitTrajectory(outType, false, ball.z - 1.0);
   } else {
     // Total miss / Whiff
-    sound.playCatch();
-  }
+    }
 }
 
+function isAllStar() { return document.getElementById("difficulty").value === "standard"; }
+// Exact ordinary CPU hit chance for this pitch's speed and discrete simulation steps.
+// Timing is uniform over .72–1.18; solid contact is caught half the time.
+function normalCpuHitChance(speed, isStrike) {
+  const step = speed * .0016;
+  let chance = 0;
+  for (let frame = Math.ceil(.72 / step); frame <= Math.ceil(1.18 / step); frame++) {
+    const z = frame * step;
+    const interval = Math.max(0, Math.min(1.18, z) - Math.max(.72, z - step)) / .46;
+    const error = Math.abs(z - 1) / step * (1000 / 60);
+    chance += interval * (error < SWING_WINDOW_PERFECT ? 1 : error < SWING_WINDOW_GOOD ? .5 : 0);
+  }
+  return chance * (isStrike ? CPU_SWING_ACCURACY : CPU_CHASE_RATE);
+}
 function cpuBattingDecision() {
-  if (batterSwung || !ball.inFlight || ball.z < 0.70) return;
-
+  if (batterSwung || !ball.inFlight || ball.z < .70) return;
   if (ball.isSuper) {
     if (ball.z >= 1) resolveSuperPitch(true);
     return;
   }
-  const willSwing = ball.cpuWillSwing;
-
-  if (willSwing) {
-    const swingTiming = ball.cpuTiming;
-    if (ball.z >= swingTiming) {
-      batterSwung = true;
-      batterSwingState = 0.01;
-
-      if (ballFullyOutsideZone()) { sound.playCatch(); return; }
-      const err = Math.abs(ball.z - 1.0);
-      const msErr = err / (ball.speed * 0.0016) * (1000 / 60);
-
-      if (msErr < SWING_WINDOW_PERFECT && !ball.isSuper) {
-        sound.playBatHit(true);
-        triggerScreenShake(10);
-        initiateHitTrajectory("PERFECT", true, ball.z - 1.0);
-      } else if (msErr < SWING_WINDOW_GOOD && !ball.isSuper) {
-        sound.playBatHit(false);
-        triggerScreenShake(5);
-        const isLineOut = (Math.random() < 0.50);
-        initiateHitTrajectory(isLineOut ? "LINE_OUT" : "SOLID_HIT", true, ball.z - 1.0);
-      } else if (msErr < SWING_WINDOW_POOR) {
-        sound.playBatHit(false);
-        triggerScreenShake(3);
-        const outType = Math.random() < 0.5 ? "GROUND_OUT" : "FLY_OUT";
-        initiateHitTrajectory(outType, true, ball.z - 1.0);
-      } else {
-        sound.playCatch();
-      }
-    }
+  if (ball.cpuResolved || ball.z < ball.cpuTiming) return;
+  ball.cpuResolved = true;
+  let quality = "TAKE";
+  if (ball.cpuWillSwing) {
+    const error = Math.abs(ball.z - 1) / (ball.speed * .0016) * (1000 / 60);
+    if (ballFullyOutsideZone()) quality = "MISS";
+    else if (error < SWING_WINDOW_PERFECT) quality = "PERFECT";
+    else if (error < SWING_WINDOW_GOOD) quality = Math.random() < .5 ? "LINE_OUT" : "SOLID_HIT";
+    else if (error < SWING_WINDOW_POOR) quality = Math.random() < .5 ? "GROUND_OUT" : "FLY_OUT";
+    else quality = "MISS";
   }
+  // Promote enough unsuccessful pitches to singles to raise total hit chance by 33%.
+  // B = .33 * H / (1-H), so H + (1-H)*B = 1.33*H.
+  if (isAllStar() && !ballFullyOutsideZone() && !["PERFECT", "SOLID_HIT"].includes(quality)) {
+    const baseline = normalCpuHitChance(ball.speed, ball.isStrike);
+    const bonus = Math.min(1, .33 * baseline / (1 - baseline));
+    if (Math.random() < bonus) quality = "SOLID_HIT";
+  }
+  if (quality === "TAKE") return;
+  batterSwung = true; batterSwingState = .01;
+  if (quality === "MISS") return;
+  triggerScreenShake(quality === "PERFECT" ? 10 : 4);
+  initiateHitTrajectory(quality, true, ball.z - 1);
 }
 
 function initiateHitTrajectory(hitQuality, isCpuHitter, timingOffset) {
+  if (!isCpuHitter && !resolvingPower && isAllStar() && ["PERFECT", "SOLID_HIT"].includes(hitQuality) && Math.random() < .33) {
+    hitQuality = "LINE_OUT";
+  }
   gameState = State.BALL_HIT;
   ball.inFlight = false;
 
@@ -945,7 +854,6 @@ function handleBallInPlayLanding(isCpuHitter) {
   let runsScored = 0;
   if (ball.hitResultType === "HOME_RUN") {
 
-    sound.playFanfare();
     createFireworks(canvas.width / 2, 160);
     triggerScreenShake(15);
     runsScored = 1 + bases.filter(Boolean).length;
@@ -1030,7 +938,6 @@ function handlePitchArrivalWithoutHit() {
 function handleOut(reason) {
 
   outs++;
-  sound.playWhistle();
   awardMeter(!isPlayerPitching(), METER_GAIN_OUT);
   resetCount(); // Reset count on out
 
@@ -1057,7 +964,6 @@ function handleOut(reason) {
 }
 
 function handleWalk() {
-  sound.playWhistle();
   resetCount(); // Reset count on walk
   let scored = 0;
   if (bases[0]) {
@@ -1998,17 +1904,16 @@ const athlete = document.getElementById("athlete");
 CHARACTERS.forEach(c => athlete.add(new Option(`${c.name} · ${c.role}`, c.id)));
 athlete.value = playerChar.id;
 athlete.onchange = () => { playerChar = CHARACTERS[Number(athlete.value)]; cpuChar = CHARACTERS[(playerChar.id + 1) % 5]; openTeamChoice(); };
-document.getElementById("start").onclick = () => { sound.init(); openTeamChoice(); };
-document.getElementById("choose-home").onclick = () => { sound.init(); showGameGuide("home"); };
-document.getElementById("choose-away").onclick = () => { sound.init(); showGameGuide("away"); };
-document.getElementById("guide-start").onclick = () => { sound.init(); startMatch(pendingTeam); };
+document.getElementById("start").onclick = () => { openTeamChoice(); };
+document.getElementById("choose-home").onclick = () => { showGameGuide("home"); };
+document.getElementById("choose-away").onclick = () => { showGameGuide("away"); };
+document.getElementById("guide-start").onclick = () => { startMatch(pendingTeam); };
 document.getElementById("guide-back").onclick = () => { document.getElementById("game-guide").close(); openTeamChoice(); };
 document.getElementById("game-guide").addEventListener("cancel", e => { e.preventDefault(); document.getElementById("game-guide").close(); openTeamChoice(); });
 document.getElementById("team-back").onclick = () => document.getElementById("team-choice").close();
-document.getElementById("action").onclick = () => { sound.init(); if (!isPaused && gameState !== State.SELECT_CHAR) { const old = {...mouse}; mouse.x = -1; mouse.y = -1; handlePrimaryAction(); Object.assign(mouse, old); } };
+document.getElementById("action").onclick = () => { if (!isPaused && gameState !== State.SELECT_CHAR) { const old = {...mouse}; mouse.x = -1; mouse.y = -1; handlePrimaryAction(); Object.assign(mouse, old); } };
 document.getElementById("pause").onclick = togglePause;
 document.getElementById("super").onclick = triggerSuper;
-document.getElementById("sound").onclick = e => { sound.muted = !sound.muted; e.target.textContent = `Sound: ${sound.muted ? "off" : "on"}`; };
 document.querySelectorAll("[data-pitch]").forEach(b => b.onclick = () => { selectedPitchType = Number(b.dataset.pitch); });
 document.addEventListener("visibilitychange", () => { if (document.hidden && gameState !== State.SELECT_CHAR && gameState !== State.GAME_OVER) isPaused = true; });
 // CSS grid gives the field only the space left after title and controls.
