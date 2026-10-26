@@ -61,6 +61,11 @@
     @media (max-width:600px) { body { padding:8px; justify-content:flex-start; } button,select { padding:8px 10px; } }
     details[open] { position:fixed; bottom:8px; z-index:10; width:min(800px,calc(100% - 16px)); max-height:60dvh; overflow:auto; padding:12px; background:#1a252f; border:1px solid #587180; border-radius:8px; }
   @media (max-height: 500px) { h1 { font-size:20px; margin:0; } body > p:first-of-type { display:none; } body { grid-template-rows:auto auto minmax(0,1fr) auto auto auto auto; padding:4px; } button,select { padding:4px 8px; } .toolbar { margin:2px 0; gap:4px; } #instructions-bar { font-size:11px; } }
+  #team-choice { position:fixed; inset:0; margin:auto; width:min(460px,calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; padding:24px; border:2px solid #f1c40f; border-radius:16px; background:#1a252f; color:white; text-align:center; }
+    #team-choice::backdrop { background:rgba(5,14,22,.85); }
+    #team-choice h2 { margin-bottom:8px; } .team-options { display:flex; gap:12px; margin:20px 0; }
+    .team-options button { flex:1; display:flex; flex-direction:column; gap:8px; align-items:center; padding:20px 8px; }
+    .team-options strong { font-size:22px; color:#ffdf76; }
   </style>
 </head>
 <body>
@@ -70,18 +75,26 @@
 <div class="toolbar" aria-label="Game setup">
 <span>3-inning match</span>
 <label>Difficulty <select id="difficulty"><option value="rookie">Rookie</option><option value="standard">All-star</option></select></label>
-<label>Team <select id="team"><option value="home">Home · pitch first</option><option value="away">Away · bat first</option></select></label>
-<label>Player <select id="athlete"></select></label><button id="start">Play ball</button>
+<label>Player <select id="athlete"></select></label><button id="start">Continue</button>
 </div>
 <div id="field-slot"><div id="game-container"><canvas id="gameCanvas" width="960" height="540" role="img" aria-label="Baseball field. Use the controls below or press Space to swing."></canvas></div></div>
 <div class="toolbar" aria-label="Game controls">
 <button id="action">Swing / Throw</button><button id="super">Fire bat · E</button><button id="pause">Pause · P</button><button id="sound">Sound: on</button>
 <span id="pitches"><button data-pitch="1">1 Fastball</button> <button data-pitch="2">2 Curve</button> <button data-pitch="3">3 Changeup</button></span>
 </div>
-<p id="status" role="status" aria-live="polite">Choose your all-star, then select Play ball.</p>
+<p id="status" role="status" aria-live="polite">Choose your all-star, then choose Home or Away.</p>
 <div id="instructions-bar">Swing: <span>Space / tap field / Swing button</span> · Super: <span>E</span> · Pause: <span>P / Esc</span></div>
 <details><summary>How to play</summary><p>Play three innings against the CPU, with extra innings for ties. Every at-bat starts with one ball and one strike: two more strikes make an out; three more balls earn a walk. Three outs switch sides.</p><p>Your away team bats in the top half; your home team bats in the bottom half. To pitch: aim with your pointer or arrow keys, choose a pitch with 1–3, then throw when the accuracy marker is centered. To bat: press Space, tap the field, or use Swing when the timing ring turns green. Hits advance runners automatically. Good plays charge your super meter; E arms a ghost pitch or fire bat before the next pitch. P pauses. Sound toggles the arcade sound effects.</p></details>
 
+<dialog id="team-choice" aria-labelledby="team-choice-title">
+  <h2 id="team-choice-title">Choose your side</h2>
+  <p id="team-choice-player"></p>
+  <div class="team-options">
+    <button id="choose-home"><strong>HOME</strong><span>Pitch first</span><span>Bat second</span></button>
+    <button id="choose-away"><strong>AWAY</strong><span>Bat first</span><span>Pitch second</span></button>
+  </div>
+  <button id="team-back">Back to characters</button>
+</dialog>
 <script>
 /* ==========================================================================
    EASY THINGS YOU CAN CHANGE (CUSTOMIZATION PARAMETERS)
@@ -423,7 +436,7 @@ window.addEventListener("keydown", (e) => {
   if (e.target.matches("button, select, input, summary")) return;
   if (e.repeat) return;
   sound.init();
-  if (e.code === "Enter" && gameState === State.SELECT_CHAR) { startMatch(); return; }
+  if (e.code === "Enter" && gameState === State.SELECT_CHAR) { openTeamChoice(); return; }
   if (gameState === State.PITCHING_AIM && e.code.startsWith("Arrow")) {
     e.preventDefault();
     pitchAimPos.x = Math.max(395, Math.min(565, pitchAimPos.x + (e.code === "ArrowRight" ? 10 : e.code === "ArrowLeft" ? -10 : 0)));
@@ -484,7 +497,7 @@ function handlePrimaryAction() {
         let cpuIdx = (idx + 1) % CHARACTERS.length;
         cpuChar = CHARACTERS[cpuIdx];
         canvas.style.cursor = "default";
-        startMatch();
+        openTeamChoice();
       }
     });
     return;
@@ -537,12 +550,19 @@ function resetFullGame() {
   isPaused = false;
   gameState = State.SELECT_CHAR;
   lastTiming = "";
-  document.getElementById("status").textContent = "Choose your all-star, then select Play ball.";
+  document.getElementById("status").textContent = "Choose your all-star, then choose Home or Away.";
 }
 
-function startMatch() {
+function openTeamChoice() {
+  if (gameState !== State.SELECT_CHAR) return;
+  document.getElementById("team-choice-player").textContent = `${playerChar.name} is ready to play!`;
+  const dialog = document.getElementById("team-choice");
+  if (!dialog.open) dialog.showModal();
+}
+function startMatch(team = "home") {
+  document.getElementById("team-choice").close();
   resetFullGame();
-  playerIsHome = document.getElementById("team").value === "home";
+  playerIsHome = team === "home";
   playerScore = 0;
   cpuScore = 0;
   currentInning = 1;
@@ -1202,7 +1222,7 @@ function drawCharacterSelect() {
 
   ctx.fillStyle = "#bdc3c7";
   ctx.font = "15px sans-serif";
-  ctx.fillText("Pick an all-star below, or choose a card to play!", canvas.width / 2, 95);
+  ctx.fillText("Choose an all-star, then pick Home or Away!", canvas.width / 2, 95);
 
   CHARACTERS.forEach((c, idx) => {
     const cardX = CARD_START_X + idx * (CARD_W + CARD_GAP);
@@ -1815,8 +1835,11 @@ function drawPauseMenu() {
 const athlete = document.getElementById("athlete");
 CHARACTERS.forEach(c => athlete.add(new Option(`${c.name} · ${c.role}`, c.id)));
 athlete.value = playerChar.id;
-athlete.onchange = () => { playerChar = CHARACTERS[Number(athlete.value)]; cpuChar = CHARACTERS[(playerChar.id + 1) % 5]; };
-document.getElementById("start").onclick = () => { sound.init(); startMatch(); };
+athlete.onchange = () => { playerChar = CHARACTERS[Number(athlete.value)]; cpuChar = CHARACTERS[(playerChar.id + 1) % 5]; openTeamChoice(); };
+document.getElementById("start").onclick = () => { sound.init(); openTeamChoice(); };
+document.getElementById("choose-home").onclick = () => { sound.init(); startMatch("home"); };
+document.getElementById("choose-away").onclick = () => { sound.init(); startMatch("away"); };
+document.getElementById("team-back").onclick = () => document.getElementById("team-choice").close();
 document.getElementById("action").onclick = () => { sound.init(); if (!isPaused && gameState !== State.SELECT_CHAR) { const old = {...mouse}; mouse.x = -1; mouse.y = -1; handlePrimaryAction(); Object.assign(mouse, old); } };
 document.getElementById("pause").onclick = togglePause;
 document.getElementById("super").onclick = triggerSuper;
@@ -1846,7 +1869,7 @@ function gameLoop(now) {
   previousFrame = now;
   while (accumulator >= 1000 / 60) { update(); accumulator -= 1000 / 60; }
   const setup = gameState === State.SELECT_CHAR;
-  for (const id of ["difficulty", "athlete", "team", "start"]) document.getElementById(id).disabled = !setup;
+  for (const id of ["difficulty", "athlete", "start"]) document.getElementById(id).disabled = !setup;
   document.getElementById("pause").textContent = isPaused ? "Resume · P" : "Pause · P";
   document.getElementById("action").disabled = isPaused || !(gameState === State.BALL_IN_FLIGHT && !isPlayerPitching() && !batterSwung || gameState === State.PITCHING_AIM || gameState === State.GAME_OVER);
   document.getElementById("action").textContent = gameState === State.GAME_OVER ? "Play again" : setup ? "Swing / Throw" : isPlayerPitching() ? "Throw pitch" : "Swing!";
