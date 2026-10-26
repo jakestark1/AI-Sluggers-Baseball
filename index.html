@@ -27,7 +27,7 @@
     #field-slot { width: 100%; min-height: 0; min-width: 0; display: grid; place-items: center; overflow: hidden; }
     #game-container {
       position: relative;
-      width: min(800px, 100%);
+      width: min(880px, 100%);
       flex: 0 0 auto;
       aspect-ratio: 16 / 9;
       box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
@@ -54,12 +54,12 @@
   button, select { font: inherit; padding: 7px 10px; border-radius: 9px; border: 1px solid #587180; background: #263e4c; color: white; cursor: pointer; }
     button:hover { background: #36576a; } button:focus-visible, select:focus-visible { outline: 3px solid #ffda63; outline-offset: 3px; }
     button:disabled { opacity: .45; cursor: default; } button.active { background: #f1c40f; color: #172a35; }
-    .toolbar { width: min(800px,100%); display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin: 5px 0; }
+    .toolbar { width: min(880px,100%); display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin: 5px 0; }
     h1 { font-size: clamp(20px,4vw,28px); margin-bottom: 6px; } #status { min-height: 1.6em; color:#ffdf76; text-align:center; }
     #action { background: #f1c40f; color:#172a35; font-weight:800; min-width:140px; } canvas { touch-action: manipulation; }
-    #instructions-bar { max-width:800px; text-align:center; line-height:1.6; } details { max-width:800px; margin-top:4px; line-height:1.7; } summary { cursor:pointer; }
+    #instructions-bar { max-width:880px; text-align:center; line-height:1.6; } details { max-width:880px; margin-top:4px; line-height:1.7; } summary { cursor:pointer; }
     @media (max-width:600px) { body { padding:8px; justify-content:flex-start; } button,select { padding:8px 10px; } }
-    details[open] { position:fixed; bottom:8px; z-index:10; width:min(800px,calc(100% - 16px)); max-height:60dvh; overflow:auto; padding:12px; background:#1a252f; border:1px solid #587180; border-radius:8px; }
+    details[open] { position:fixed; bottom:8px; z-index:10; width:min(880px,calc(100% - 16px)); max-height:60dvh; overflow:auto; padding:12px; background:#1a252f; border:1px solid #587180; border-radius:8px; }
   @media (max-height: 500px) { h1 { font-size:20px; margin:0; } body > p:first-of-type { display:none; } body { grid-template-rows:auto auto minmax(0,1fr) auto auto auto auto; padding:4px; } button,select { padding:4px 8px; } .toolbar { margin:2px 0; gap:4px; } #instructions-bar { font-size:11px; } }
   #team-choice, #game-guide { position:fixed; inset:0; margin:auto; width:min(460px,calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; padding:24px; border:2px solid #f1c40f; border-radius:16px; background:#1a252f; color:white; text-align:center; }
     #team-choice::backdrop, #game-guide::backdrop { background:rgba(5,14,22,.85); }
@@ -72,13 +72,17 @@
     .guide-actions { display:flex; justify-content:center; gap:12px; margin-top:18px; }
     #guide-start { background:#f1c40f; color:#172a35; font-weight:bold; }
   /* Reserve feedback space so new play results cannot resize the field. */
-    #status { width:min(800px,100%); min-height:2.8em; height:2.8em; line-height:1.4; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
+    #status { width:min(880px,100%); min-height:2.8em; height:2.8em; line-height:1.4; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
     /* Keep the field size stable as meter percentages and power names change. */
     .toolbar[aria-label="Game controls"] { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:36px 36px; gap:6px; }
     .toolbar[aria-label="Game controls"] > button { min-width:0; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:4px 6px; }
     #pitches { grid-column:1 / -1; display:flex; gap:6px; justify-content:center; }
     #pitches[hidden] { display:none; }
     #pitches button { min-width:0; padding:4px 8px; }
+  @media (min-width:920px) {
+      .toolbar[aria-label="Game controls"] { grid-template-columns:130px 155px 100px 95px minmax(0,1fr); grid-template-rows:36px; }
+      #pitches { grid-column:auto; }
+    }
   </style>
 </head>
 <body>
@@ -97,7 +101,7 @@
 </div>
 <p id="status" role="status" aria-live="polite">Your big-league adventure starts here — pick an all-star!</p>
 <div id="instructions-bar">Swing: <span>Space / tap field / Swing button</span> · Super: <span>E</span> · Pause: <span>P / Esc</span></div>
-<details><summary>How to play</summary><p>Play three innings against the CPU, with extra innings for ties. Every at-bat starts with one ball and one strike: two more strikes make an out; three more balls earn a walk. Three outs switch sides.</p><p>Your away team bats in the top half; your home team bats in the bottom half. To pitch: aim with your pointer or arrow keys, choose a pitch with 1–3, then throw when the accuracy marker is centered. To bat: press Space, tap the field, or use Swing when the timing ring turns green. Hits advance runners automatically. Good plays charge your super meter; E randomly arms one of three batting or pitching powers before the next pitch. P pauses. Sound toggles the arcade sound effects.</p></details>
+<details><summary>How to play</summary><p>Play three innings against the CPU, with extra innings for ties. Every at-bat starts with one ball and one strike: two more strikes make an out; three more balls earn a walk. Three outs switch sides.</p><p>Your away team bats in the top half; your home team bats in the bottom half. To pitch: aim with your pointer or arrow keys, choose a pitch with 1–3, then throw when the accuracy marker is centered; the red zone reduces accuracy. To bat: press Space, tap the field, or use Swing when the timing ring turns green. Hits advance runners automatically. Good plays charge your super meter; E randomly arms one of three batting or pitching powers before the next pitch. P pauses. Sound toggles the arcade sound effects.</p></details>
 
 <dialog id="team-choice" aria-labelledby="team-choice-title">
   <h2 id="team-choice-title">Choose your side</h2>
@@ -114,8 +118,8 @@
   <ul>
     <li><strong>The game:</strong> Three innings against the CPU, with extra innings for ties. Three outs switch sides.</li>
     <li><strong>Fast counts:</strong> Every batter starts at 1 ball and 1 strike. Two more strikes mean an out; three more balls earn a walk.</li>
-    <li><strong>Batting:</strong> Press Space, tap the field, or use Swing. Watch the pitch and swing when the timing ring turns green. Let pitches outside the zone pass. Runners advance automatically.</li>
-    <li><strong>Pitching:</strong> Aim with your pointer or arrow keys. Choose Fastball, Curve, or Changeup with the buttons or keys 1–3. Press Space or Throw when the accuracy marker is centered.</li>
+    <li><strong>Batting:</strong> Press Space, tap the field, or use Swing. Watch the pitch and swing when the timing ring turns green. Let pitches fully outside the zone pass; any pitch touching the zone counts as a strike if taken. Runners advance automatically.</li>
+    <li><strong>Pitching:</strong> Aim with your pointer or arrow keys. Choose Fastball, Curve, or Changeup with the buttons or keys 1–3. Press Space or Throw when the accuracy marker is centered; red-zone releases are less accurate.</li>
     <li><strong>Super powers:</strong> Good plays charge your meter. When full, press E or the super button before a pitch. Batting randomly arms a Fire, Thunder, or Meteor Bat for a powered hit. Pitching randomly arms a Ghost, Tornado, or Frost Ball that homes into the zone. Swings fully outside the zone always miss; a batting power is consumed on your swing. If both sides use a power on the same pitch, the pitching power decides the outcome.</li>
     <li><strong>Pause and sound:</strong> Press P or Escape, or use Pause. Sound toggles arcade effects.</li>
   </ul>
@@ -359,6 +363,7 @@ let playerMeter = 0;
 let cpuMeter = 0;
 let superActive = false;
 let activePower = null;
+let powerEffect = null;
 const SUPER_POWERS = {
   batting: [
     {name:"Fire Bat", color:"#ff733e", symbol:"🔥"},
@@ -385,6 +390,7 @@ function ballFullyOutsideZone() {
   return Math.hypot(x - nearestX, y - nearestY) > r;
 }
 function poweredContact(result, isCpu, power) {
+  startPowerEffect(power);
   sound.playBatHit(true); triggerScreenShake(9);
   initiateHitTrajectory(result === "GROUND_OUT" ? "GROUND_OUT" : "SOLID_HIT", isCpu, ball.z - 1);
   ball.hitResultType = result;
@@ -611,6 +617,7 @@ function resetFullGame() {
   outs = 0;
   superActive = false;
   activePower = null;
+  powerEffect = null;
   bannerTimer = 0;
   window.bannerCallback = null;
   pitchWait = 0;
@@ -688,13 +695,20 @@ function prepareNextPitch() {
 /* ==========================================================================
    PITCHING MECHANICS
    ========================================================================== */
+function pitchDrift(meterValue, random = Math.random) {
+  const distance = Math.min(1, Math.abs(meterValue));
+  const redZone = distance > .30;
+  const severity = Math.max(0, (distance - .30) / .70);
+  // A red-zone release guarantees substantially more drift than a green release.
+  const radius = redZone ? (35 + 75 * severity) * (.65 + .35 * random()) : 8 * (distance / .30) * random();
+  const angle = random() * Math.PI * 2;
+  return {x: Math.cos(angle) * radius, y: Math.sin(angle) * radius};
+}
 function lockPitchAndThrow() {
   totalPitches++;
   sound.playPitchThrow();
 
-  const accuracyErr = Math.abs(pitchMeterVal) * 45;
-  const driftX = (Math.random() - 0.5) * accuracyErr;
-  const driftY = (Math.random() - 0.5) * accuracyErr;
+  const {x: driftX, y: driftY} = pitchDrift(pitchMeterVal);
 
   const targetX = pitchAimPos.x + driftX;
   const targetY = pitchAimPos.y + driftY;
@@ -756,12 +770,8 @@ function launchBall(targetX, targetY, type, isSuper, pitcher) {
 
   ball.cpuTiming = 0.72 + Math.random() * 0.46;
 
-  ball.isStrike = (
-    targetX >= STRIKE_ZONE.x &&
-    targetX <= STRIKE_ZONE.x + STRIKE_ZONE.w &&
-    targetY >= STRIKE_ZONE.y &&
-    targetY <= STRIKE_ZONE.y + STRIKE_ZONE.h
-  );
+  ball.isStrike = !ballFullyOutsideZone();
+  if (ball.power) startPowerEffect(ball.power);
   ball.cpuWillSwing = Math.random() < (ball.isStrike ? CPU_SWING_ACCURACY : CPU_CHASE_RATE);
 }
 
@@ -774,7 +784,7 @@ function swingBat() {
 
   const armed = superActive;
   const power = activePower;
-  if (armed) { superActive = false; activePower = null; }
+  if (armed) { superActive = false; activePower = null; startPowerEffect(power); }
   if (ballFullyOutsideZone()) {
     lastTiming = "Outside the zone — swing and miss";
     sound.playCatch(); return;
@@ -1123,6 +1133,7 @@ function showBanner(title, sub, duration, onComplete = null) {
    ========================================================================== */
 function update() {
   if (isPaused) return; // Halt simulation when paused
+  if (powerEffect && --powerEffect.life <= 0) powerEffect = null;
 
   if (gameState === State.PITCHING_READY && pitchWait > 0 && --pitchWait === 0) cpuThrowPitch();
   if (screenShake > 0) screenShake *= 0.84;
@@ -1227,6 +1238,7 @@ function draw() {
   drawBatter();
   drawStrikeZone();
   drawBall();
+  drawPowerEffect();
   drawConfetti();
   drawHUD();
   drawOverlays();
@@ -1678,6 +1690,45 @@ function drawBall() {
   ctx.restore();
 }
 
+function startPowerEffect(power) {
+  if (power) powerEffect = {power, life:90, duration:90};
+}
+function drawPowerEffect() {
+  if (!powerEffect) return;
+  const {power, life, duration} = powerEffect;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const age = reducedMotion ? 20 : duration - life;
+  const fade = Math.min(1, life / 20);
+  ctx.save();
+  // Edge glow leaves the strike zone and ball clearly visible.
+  const glow = ctx.createRadialGradient(480,300,180,480,300,580);
+  glow.addColorStop(0,"transparent"); glow.addColorStop(1,power.color);
+  ctx.globalAlpha = .28 * fade; ctx.fillStyle=glow; ctx.fillRect(0,90,960,450);
+  ctx.globalAlpha=.85*fade; ctx.strokeStyle=power.color;ctx.fillStyle=power.color;ctx.lineWidth=3;
+  ctx.shadowColor=power.color;ctx.shadowBlur=10;
+  if (!reducedMotion) {
+    if (power.name === "Thunder Bat") {
+      for(const side of [-1,1]) {
+        const x=480+side*330;
+        ctx.beginPath();ctx.moveTo(x,115);ctx.lineTo(x-side*35,200);ctx.lineTo(x+side*10,190);ctx.lineTo(x-side*45,300);ctx.lineTo(x,260);ctx.lineTo(x-side*25,390);ctx.stroke();
+      }
+    } else if (power.name === "Tornado Ball") {
+      for(let i=0;i<10;i++) {const y=175+i*25;const radius=75-i*5;const x=790+Math.sin(age*.08+i*.4)*12;ctx.beginPath();ctx.ellipse(x,y,radius,9,0,age*.1+i,age*.1+i+Math.PI*1.6);ctx.stroke();}
+    } else if (power.name === "Frost Ball") {
+      for(let i=0;i<18;i++) {const x=35+(i*173)%890;const y=110+(i*67+age*1.4)%390;ctx.save();ctx.translate(x,y);ctx.rotate(age*.01);for(let arm=0;arm<3;arm++){ctx.rotate(Math.PI/3);ctx.beginPath();ctx.moveTo(-9,0);ctx.lineTo(9,0);ctx.stroke();}ctx.restore();}
+    } else if (power.name === "Ghost Ball") {
+      for(const side of [-1,1]) {const x=480+side*330;const y=245+Math.sin(age*.06)*18;ctx.beginPath();ctx.arc(x,y,24,Math.PI,0);ctx.lineTo(x+24,y+29);ctx.lineTo(x+12,y+20);ctx.lineTo(x,y+29);ctx.lineTo(x-12,y+20);ctx.lineTo(x-24,y+29);ctx.closePath();ctx.globalAlpha=.4*fade;ctx.fill();ctx.globalAlpha=.85*fade;ctx.stroke();ctx.fillStyle="#173543";ctx.beginPath();ctx.arc(x-8,y,3,0,Math.PI*2);ctx.arc(x+8,y,3,0,Math.PI*2);ctx.fill();ctx.fillStyle=power.color;}
+    } else if (power.name === "Meteor Bat") {
+      for(let i=0;i<7;i++){const x=70+(i*137+age*5)%850;const y=120+(i*73+age*3)%350;ctx.beginPath();ctx.moveTo(x-35,y-26);ctx.lineTo(x,y);ctx.stroke();ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fill();}
+    } else if (power.name === "Fire Bat") {
+      for(let i=0;i<22;i++){const x=20+i*44;const y=515-(age*3+i*17)%95;const size=8+(i%4)*3;ctx.beginPath();ctx.moveTo(x-size,y+size);ctx.quadraticCurveTo(x-size,y,x,y-size*2);ctx.quadraticCurveTo(x+size,y,x+size,y+size);ctx.closePath();ctx.fill();}
+    }
+  }
+  ctx.shadowBlur=0;ctx.globalAlpha=fade;ctx.fillStyle="#173543";ctx.fillRect(320,96,320,30);
+  ctx.fillStyle=power.color;ctx.textAlign="center";ctx.font="bold 18px sans-serif";ctx.fillText(`${power.symbol} ${power.name.toUpperCase()}`,480,118);
+  ctx.restore();
+}
+
 function drawConfetti() {
   confetti.forEach((p) => {
     ctx.fillStyle = p.color;
@@ -1965,7 +2016,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden && gam
 function fitGameToPage() {
   const slot = document.getElementById("field-slot");
   const field = document.getElementById("game-container");
-  const width = Math.max(0, Math.min(800, slot.clientWidth, slot.clientHeight * 16 / 9));
+  const width = Math.max(0, Math.min(880, slot.clientWidth, slot.clientHeight * 16 / 9));
   field.style.width = `${width}px`;
   field.style.height = `${width * 9 / 16}px`;
 }

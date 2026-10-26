@@ -20,6 +20,8 @@ In this repository, open Settings → Pages. Choose **Deploy from a branch**, th
 
 ## Super powers and contact
 
-Activation randomly chooses Fire/Thunder/Meteor Bat or Ghost/Tornado/Frost Ball. The powers in each group share outcome odds; names and glow colors vary. Batting: 50% home run, 40% double, 10% single. Pitching: 50% swinging strike, 35% ground out, 15% single. Powered pitches home into the zone. Pitching power takes precedence if both sides activate powers on the same pitch. A batting power is consumed on the swing.
+Activation randomly chooses Fire/Thunder/Meteor Bat or Ghost/Tornado/Frost Ball. The powers in each group share outcome odds and have themed screen effects: flames, lightning, meteors, ghosts, tornadoes, or snowflakes. Reduced-motion preferences replace moving effects with a soft glow and power label. Powered pitches home into the zone. Pitching power takes precedence if both sides activate powers on the same pitch. A batting power is consumed on the swing.
 
 A ball completely outside the strike-zone rectangle, including its 21-pixel plate radius, always produces a swing and miss. A ball touching an edge remains hittable. This rule applies to both batters and overrides batting powers.
+
+Normal pitches released in the accuracy meter’s red sections drift more than green-section releases. Pitches touching any edge of the zone count as strikes when taken; fully outside pitches count as balls when taken and strikes when swung at.
