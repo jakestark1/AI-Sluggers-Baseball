@@ -24,7 +24,7 @@
     }
     #game-container {
       position: relative;
-      width: min(1280px, 100%);
+      width: min(960px, 100%, max(320px, calc((100dvh - 280px) * 16 / 9)));
       aspect-ratio: 16 / 9;
       box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
       border-radius: 12px;
@@ -50,10 +50,10 @@
   button, select { font: inherit; padding: 10px 14px; border-radius: 9px; border: 1px solid #587180; background: #263e4c; color: white; cursor: pointer; }
     button:hover { background: #36576a; } button:focus-visible, select:focus-visible { outline: 3px solid #ffda63; outline-offset: 3px; }
     button:disabled { opacity: .45; cursor: default; } button.active { background: #f1c40f; color: #172a35; }
-    .toolbar { width: min(1280px,100%); display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin: 10px 0; }
+    .toolbar { width: min(960px,100%); display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin: 10px 0; }
     h1 { font-size: clamp(20px,4vw,28px); margin-bottom: 6px; } #status { min-height: 1.6em; color:#ffdf76; text-align:center; }
     #action { background: #f1c40f; color:#172a35; font-weight:800; min-width:140px; } canvas { touch-action: manipulation; }
-    #instructions-bar { max-width:1280px; text-align:center; line-height:1.6; } details { max-width:1280px; margin-top:12px; line-height:1.7; } summary { cursor:pointer; }
+    #instructions-bar { max-width:960px; text-align:center; line-height:1.6; } details { max-width:960px; margin-top:12px; line-height:1.7; } summary { cursor:pointer; }
     @media (max-width:600px) { body { padding:8px; justify-content:flex-start; } button,select { padding:12px 10px; } }
   </style>
 </head>
