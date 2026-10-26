@@ -20,11 +20,12 @@
       justify-content: center;
       min-height: 100vh;
       overflow: auto;
-      padding: 16px;
+      padding: 8px;
     }
     #game-container {
       position: relative;
-      width: min(960px, 100%, max(320px, calc((100dvh - 280px) * 16 / 9)));
+      width: min(800px, 100%);
+      flex: 0 0 auto;
       aspect-ratio: 16 / 9;
       box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
       border-radius: 12px;
@@ -38,7 +39,7 @@
       cursor: default;
     }
     #instructions-bar {
-      margin-top: 10px;
+      margin-top: 4px;
       font-size: 13px;
       color: #95a5a6;
       letter-spacing: 0.5px;
@@ -47,14 +48,15 @@
       color: #f1c40f;
       font-weight: bold;
     }
-  button, select { font: inherit; padding: 10px 14px; border-radius: 9px; border: 1px solid #587180; background: #263e4c; color: white; cursor: pointer; }
+  button, select { font: inherit; padding: 7px 10px; border-radius: 9px; border: 1px solid #587180; background: #263e4c; color: white; cursor: pointer; }
     button:hover { background: #36576a; } button:focus-visible, select:focus-visible { outline: 3px solid #ffda63; outline-offset: 3px; }
     button:disabled { opacity: .45; cursor: default; } button.active { background: #f1c40f; color: #172a35; }
-    .toolbar { width: min(960px,100%); display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin: 10px 0; }
+    .toolbar { width: min(800px,100%); display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin: 5px 0; }
     h1 { font-size: clamp(20px,4vw,28px); margin-bottom: 6px; } #status { min-height: 1.6em; color:#ffdf76; text-align:center; }
     #action { background: #f1c40f; color:#172a35; font-weight:800; min-width:140px; } canvas { touch-action: manipulation; }
-    #instructions-bar { max-width:960px; text-align:center; line-height:1.6; } details { max-width:960px; margin-top:12px; line-height:1.7; } summary { cursor:pointer; }
-    @media (max-width:600px) { body { padding:8px; justify-content:flex-start; } button,select { padding:12px 10px; } }
+    #instructions-bar { max-width:800px; text-align:center; line-height:1.6; } details { max-width:800px; margin-top:4px; line-height:1.7; } summary { cursor:pointer; }
+    @media (max-width:600px) { body { padding:8px; justify-content:flex-start; } button,select { padding:8px 10px; } }
+    details[open] { position:fixed; bottom:8px; z-index:10; width:min(800px,calc(100% - 16px)); max-height:60dvh; overflow:auto; padding:12px; background:#1a252f; border:1px solid #587180; border-radius:8px; }
   </style>
 </head>
 <body>
@@ -1811,6 +1813,28 @@ document.getElementById("super").onclick = triggerSuper;
 document.getElementById("sound").onclick = e => { sound.muted = !sound.muted; e.target.textContent = `Sound: ${sound.muted ? "off" : "on"}`; };
 document.querySelectorAll("[data-pitch]").forEach(b => b.onclick = () => { selectedPitchType = Number(b.dataset.pitch); });
 document.addEventListener("visibilitychange", () => { if (document.hidden && gameState !== State.SELECT_CHAR && gameState !== State.GAME_OVER) isPaused = true; });
+// Reserve actual space for every control row, including wrapped mobile controls.
+function fitGameToPage() {
+  const field = document.getElementById("game-container");
+  const bodyStyle = getComputedStyle(document.body);
+  let reserved = parseFloat(bodyStyle.paddingTop) + parseFloat(bodyStyle.paddingBottom) + 16;
+  for (const element of document.body.children) {
+    if (element === field || element.tagName === "SCRIPT") continue;
+    const style = getComputedStyle(element);
+    if (style.display === "none" || style.position === "fixed") continue;
+    reserved += element.getBoundingClientRect().height + parseFloat(style.marginTop) + parseFloat(style.marginBottom);
+  }
+  const availableHeight = Math.max(0, (window.visualViewport?.height || innerHeight) - reserved);
+  const availableWidth = document.documentElement.clientWidth - parseFloat(bodyStyle.paddingLeft) - parseFloat(bodyStyle.paddingRight);
+  field.style.width = `${Math.max(0, Math.min(800, availableWidth, availableHeight * 16 / 9))}px`;
+}
+const pageLayoutObserver = new ResizeObserver(fitGameToPage);
+for (const element of document.body.children) {
+  if (!["SCRIPT"].includes(element.tagName) && element.id !== "game-container") pageLayoutObserver.observe(element);
+}
+window.addEventListener("resize", fitGameToPage);
+window.visualViewport?.addEventListener("resize", fitGameToPage);
+fitGameToPage();
 let previousFrame = 0, accumulator = 0;
 function gameLoop(now) {
   accumulator += Math.min(now - (previousFrame || now), 100);
