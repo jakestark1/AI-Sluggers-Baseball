@@ -70,6 +70,7 @@
 <div class="toolbar" aria-label="Game setup">
 <span>3-inning match</span>
 <label>Difficulty <select id="difficulty"><option value="rookie">Rookie</option><option value="standard">All-star</option></select></label>
+<label>Team <select id="team"><option value="home">Home · pitch first</option><option value="away">Away · bat first</option></select></label>
 <label>Player <select id="athlete"></select></label><button id="start">Play ball</button>
 </div>
 <div id="field-slot"><div id="game-container"><canvas id="gameCanvas" width="960" height="540" role="img" aria-label="Baseball field. Use the controls below or press Space to swing."></canvas></div></div>
@@ -79,7 +80,7 @@
 </div>
 <p id="status" role="status" aria-live="polite">Choose your all-star, then select Play ball.</p>
 <div id="instructions-bar">Swing: <span>Space / tap field / Swing button</span> · Super: <span>E</span> · Pause: <span>P / Esc</span></div>
-<details><summary>How to play</summary><p>Play three innings against the CPU, with extra innings for ties. Every at-bat starts with one ball and one strike: two more strikes make an out; three more balls earn a walk. Three outs switch sides.</p><p>Pitch in the top half: aim with your pointer or arrow keys, choose a pitch with 1–3, then throw when the accuracy marker is centered. Bat in the bottom half: press Space, tap the field, or use Swing when the timing ring turns green. Hits advance runners automatically. Good plays charge your super meter; E arms a ghost pitch or fire bat before the next pitch. P pauses. Sound toggles the arcade sound effects.</p></details>
+<details><summary>How to play</summary><p>Play three innings against the CPU, with extra innings for ties. Every at-bat starts with one ball and one strike: two more strikes make an out; three more balls earn a walk. Three outs switch sides.</p><p>Your away team bats in the top half; your home team bats in the bottom half. To pitch: aim with your pointer or arrow keys, choose a pitch with 1–3, then throw when the accuracy marker is centered. To bat: press Space, tap the field, or use Swing when the timing ring turns green. Hits advance runners automatically. Good plays charge your super meter; E arms a ghost pitch or fire bat before the next pitch. P pauses. Sound toggles the arcade sound effects.</p></details>
 
 <script>
 /* ==========================================================================
@@ -301,6 +302,9 @@ let playerChar = CHARACTERS[4];
 let cpuChar = CHARACTERS[0];
 let currentInning = 1;
 let isTopInning = true;
+let playerIsHome = true;
+function isPlayerPitching() { return isTopInning === playerIsHome; }
+function homeTeamLeads() { return playerIsHome ? playerScore > cpuScore : cpuScore > playerScore; }
 let playerScore = 0;
 let cpuScore = 0;
 let totalPitches = 0;
@@ -399,7 +403,7 @@ function updatePointer(e) {
     canvas.style.cursor = hoveringCard ? "pointer" : "default";
   } else if (inRect(mouse, PAUSE_BTN)) {
     canvas.style.cursor = "pointer";
-  } else if (gameState === State.PITCHING_AIM && isTopInning) {
+  } else if (gameState === State.PITCHING_AIM && isPlayerPitching()) {
     canvas.style.cursor = "crosshair";
     pitchAimPos.x = Math.max(STRIKE_ZONE.x - 25, Math.min(STRIKE_ZONE.x + STRIKE_ZONE.w + 25, mouse.x));
     pitchAimPos.y = Math.max(STRIKE_ZONE.y - 25, Math.min(STRIKE_ZONE.y + STRIKE_ZONE.h + 25, mouse.y));
@@ -491,12 +495,12 @@ function handlePrimaryAction() {
     return;
   }
 
-  if (gameState === State.PITCHING_AIM && isTopInning) {
+  if (gameState === State.PITCHING_AIM && isPlayerPitching()) {
     lockPitchAndThrow();
     return;
   }
 
-  if (!isTopInning && gameState === State.BALL_IN_FLIGHT && !batterSwung) {
+  if (!isPlayerPitching() && gameState === State.BALL_IN_FLIGHT && !batterSwung) {
     swingBat();
     return;
   }
@@ -507,7 +511,7 @@ function triggerSuper() {
     superActive = true;
     playerMeter = 0;
     sound.playFanfare();
-    showBanner("SUPER POWER ACTIVATED!", isTopInning ? "GHOST BALL READY!" : "FIREBALL BAT READY!", 60);
+    showBanner("SUPER POWER ACTIVATED!", isPlayerPitching() ? "GHOST BALL READY!" : "FIREBALL BAT READY!", 60);
   }
 }
 
@@ -538,6 +542,7 @@ function resetFullGame() {
 
 function startMatch() {
   resetFullGame();
+  playerIsHome = document.getElementById("team").value === "home";
   playerScore = 0;
   cpuScore = 0;
   currentInning = 1;
@@ -555,7 +560,7 @@ function resetCount() {
 function startHalfInningTransition() {
   gameState = State.INNING_TRANSITION;
   const side = isTopInning ? "TOP" : "BOTTOM";
-  const batterName = isTopInning ? `CPU: ${cpuChar.name}` : `YOU: ${playerChar.name}`;
+  const batterName = isPlayerPitching() ? `CPU: ${cpuChar.name}` : `YOU: ${playerChar.name}`;
   showBanner(`${side} OF INNING ${currentInning}`, `At Bat: ${batterName}`, 80, () => {
     bases = [false, false, false];
     resetCount();
@@ -572,7 +577,7 @@ function prepareNextPitch() {
   ball.y = 350;
   ball.z = 0;
 
-  if (isTopInning) {
+  if (isPlayerPitching()) {
     gameState = State.PITCHING_AIM;
   } else {
     gameState = State.PITCHING_READY;
@@ -858,7 +863,7 @@ function advanceRunners(basesToAdvance) {
 
 function handlePitchArrivalWithoutHit() {
   gameState = State.PLAY_RESULT;
-  const isCpuBatting = isTopInning;
+  const isCpuBatting = isPlayerPitching();
 
   if (batterSwung) {
     strikes++;
@@ -895,7 +900,7 @@ function handleOut(reason) {
 
   outs++;
   sound.playWhistle();
-  awardMeter(isTopInning, METER_GAIN_OUT);
+  awardMeter(!isPlayerPitching(), METER_GAIN_OUT);
   resetCount(); // Reset count on out
 
   if (outs >= 3) {
@@ -910,6 +915,7 @@ function handleOut(reason) {
         currentInning++;
         isTopInning = true;
       } else {
+        if (currentInning >= TOTAL_INNINGS && homeTeamLeads()) { gameState = State.GAME_OVER; return; }
         isTopInning = false;
       }
       startHalfInningTransition();
@@ -932,7 +938,7 @@ function handleWalk() {
   }
   bases[0] = true;
 
-  if (isTopInning) cpuScore += scored;
+  if (isPlayerPitching()) cpuScore += scored;
   else playerScore += scored;
 
   showBanner("WALK!", scored > 0 ? "Walk Forced in a Run!" : "Batter to 1st Base", 65, finishPlay);
@@ -951,7 +957,7 @@ function checkGameEnd() {
 }
 
 function finishPlay() {
-  if (!isTopInning && currentInning >= TOTAL_INNINGS && playerScore > cpuScore) { gameState = State.GAME_OVER; return; }
+  if (!isTopInning && currentInning >= TOTAL_INNINGS && homeTeamLeads()) { gameState = State.GAME_OVER; return; }
   prepareNextPitch();
 }
 
@@ -984,7 +990,7 @@ function createFireworks(x, y) {
 }
 
 function showBanner(title, sub, duration, onComplete = null) {
-  document.getElementById("status").textContent = `${title} ${sub}${lastTiming && !isTopInning ? " · " + lastTiming : ""}`;
+  document.getElementById("status").textContent = `${title} ${sub}${lastTiming && !isPlayerPitching() ? " · " + lastTiming : ""}`;
   bannerText = title;
   bannerSubText = sub;
   bannerTimer = duration;
@@ -1009,7 +1015,7 @@ function update() {
     }
   }
 
-  if (gameState === State.PITCHING_AIM && isTopInning) {
+  if (gameState === State.PITCHING_AIM && isPlayerPitching()) {
     pitchMeterVal += 0.055 * pitchMeterDir;
     if (pitchMeterVal > 1) { pitchMeterVal = 1; pitchMeterDir = -1; }
     if (pitchMeterVal < -1) { pitchMeterVal = -1; pitchMeterDir = 1; }
@@ -1025,7 +1031,7 @@ function update() {
     ball.z += (ball.speed * 0.0016);
 
     if (ball.pitchType === PITCH_TYPES.CURVEBALL) {
-      const pitcher = isTopInning ? playerChar : cpuChar;
+      const pitcher = isPlayerPitching() ? playerChar : cpuChar;
       const curveAmount = 45 * (pitcher.curveMod || 1.0);
       ball.curveOffset = Math.sin(ball.z * Math.PI) * curveAmount;
     } else {
@@ -1035,7 +1041,7 @@ function update() {
     ball.x = (canvas.width / 2) + (ball.targetX - (canvas.width / 2)) * ball.z + ball.curveOffset;
     ball.y = 350 + (ball.targetY - 350) * ball.z;
 
-    if (isTopInning) {
+    if (isPlayerPitching()) {
       cpuBattingDecision();
     }
 
@@ -1059,7 +1065,7 @@ function update() {
     ball.groundY = groundY;
 
     if (ball.hitProgress >= 1.0) {
-      handleBallInPlayLanding(isTopInning);
+      handleBallInPlayLanding(isPlayerPitching());
     }
   }
 
@@ -1369,8 +1375,8 @@ const FIELDERS = [
   { position: "C", x: 480, y: 526, scale: .58 }
 ];
 function drawFielders() {
-  const teamColor = isTopInning ? "#2980b9" : "#c0392b";
-  const captain = isTopInning ? playerChar : cpuChar;
+  const teamColor = isPlayerPitching() ? "#2980b9" : "#c0392b";
+  const captain = isPlayerPitching() ? playerChar : cpuChar;
   FIELDERS.forEach((fielder, index) => {
     let x = fielder.x, y = fielder.y;
     // React toward the ball without changing the existing batting rules.
@@ -1398,7 +1404,7 @@ function drawFielders() {
 }
 
 function drawPitcher() {
-  const p = isTopInning ? playerChar : cpuChar;
+  const p = isPlayerPitching() ? playerChar : cpuChar;
   const px = canvas.width / 2;
   const py = 344;
 
@@ -1407,7 +1413,7 @@ function drawPitcher() {
 
   // A smaller shared portrait retains horns, beaks, muzzles and markings.
   drawCharacterFace(p, 0, -5, 0.65);
-  ctx.fillStyle = isTopInning ? "#2980b9" : "#c0392b";
+  ctx.fillStyle = isPlayerPitching() ? "#2980b9" : "#c0392b";
   ctx.beginPath(); ctx.ellipse(0, 20, 19, 12, 0, Math.PI, Math.PI * 2); ctx.fill();
   ctx.fillStyle = "#d8b27a"; ctx.beginPath(); ctx.ellipse(19, 16, 8, 11, -.4, 0, Math.PI*2); ctx.fill();
 
@@ -1415,7 +1421,7 @@ function drawPitcher() {
 }
 
 function drawBatter() {
-  const b = isTopInning ? cpuChar : playerChar;
+  const b = isPlayerPitching() ? cpuChar : playerChar;
   const bx = canvas.width / 2 - 90;
   const by = 450;
 
@@ -1427,13 +1433,13 @@ function drawBatter() {
   ctx.save();
   ctx.translate(25, -25);
   ctx.rotate(-0.8 + swingAngle);
-  ctx.fillStyle = superActive && !isTopInning ? "#e74c3c" : "#e67e22";
+  ctx.fillStyle = superActive && !isPlayerPitching() ? "#e74c3c" : "#e67e22";
   ctx.fillRect(-6, -55, 12, 60);
   ctx.strokeStyle = "#d35400";
   ctx.strokeRect(-6, -55, 12, 60);
   ctx.restore();
 
-  ctx.fillStyle = isTopInning ? "#c0392b" : "#2980b9";
+  ctx.fillStyle = isPlayerPitching() ? "#c0392b" : "#2980b9";
   ctx.beginPath(); ctx.ellipse(0, 12, 26, 22, 0, 0, Math.PI*2); ctx.fill();
   ctx.strokeStyle = "#eff3e6"; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,30); ctx.stroke();
@@ -1444,7 +1450,7 @@ function drawBatter() {
 
 function drawStrikeZone() {
   ctx.save();
-  if (!isTopInning && gameState === State.BALL_IN_FLIGHT) {
+  if (!isPlayerPitching() && gameState === State.BALL_IN_FLIGHT) {
     ctx.strokeStyle = Math.abs(ball.z - 1) < .10 ? "#8dff88" : "#ffdf76";
     ctx.lineWidth = 4;
     ctx.beginPath(); ctx.arc(ball.targetX, ball.targetY, 23 + Math.abs(1 - ball.z) * 55, 0, Math.PI * 2); ctx.stroke();
@@ -1458,7 +1464,7 @@ function drawStrikeZone() {
   ctx.lineWidth = 2;
   ctx.strokeRect(STRIKE_ZONE.x, STRIKE_ZONE.y, STRIKE_ZONE.w, STRIKE_ZONE.h);
 
-  if (gameState === State.PITCHING_AIM && isTopInning) {
+  if (gameState === State.PITCHING_AIM && isPlayerPitching()) {
     ctx.strokeStyle = "#f39c12";
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -1570,8 +1576,8 @@ function drawHUD() {
 
   ctx.fillStyle = "#fff";
   ctx.font = "bold 15px sans-serif";
-  ctx.fillText(`YOU: ${playerScore}`, 26, 54);
-  ctx.fillText(`CPU: ${cpuScore}`, 26, 73);
+  ctx.fillText(`YOU (${playerIsHome ? "HOME" : "AWAY"}): ${playerScore}`, 26, 54);
+  ctx.fillText(`CPU (${playerIsHome ? "AWAY" : "HOME"}): ${cpuScore}`, 26, 73);
 
   ctx.fillStyle = "#bdc3c7";
   ctx.font = "12px sans-serif";
@@ -1666,7 +1672,7 @@ function drawHUD() {
   ctx.fillText("⏸ PAUSE", PAUSE_BTN.x + PAUSE_BTN.w / 2, PAUSE_BTN.y + 20);
 
   // Pitch Selector Bar
-  if (gameState === State.PITCHING_AIM && isTopInning) {
+  if (gameState === State.PITCHING_AIM && isPlayerPitching()) {
     ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
     if (ctx.roundRect) {
       ctx.beginPath();
@@ -1840,13 +1846,13 @@ function gameLoop(now) {
   previousFrame = now;
   while (accumulator >= 1000 / 60) { update(); accumulator -= 1000 / 60; }
   const setup = gameState === State.SELECT_CHAR;
-  for (const id of ["difficulty", "athlete", "start"]) document.getElementById(id).disabled = !setup;
+  for (const id of ["difficulty", "athlete", "team", "start"]) document.getElementById(id).disabled = !setup;
   document.getElementById("pause").textContent = isPaused ? "Resume · P" : "Pause · P";
-  document.getElementById("action").disabled = isPaused || !(gameState === State.BALL_IN_FLIGHT && !isTopInning && !batterSwung || gameState === State.PITCHING_AIM || gameState === State.GAME_OVER);
-  document.getElementById("action").textContent = gameState === State.GAME_OVER ? "Play again" : setup ? "Swing / Throw" : isTopInning ? "Throw pitch" : "Swing!";
+  document.getElementById("action").disabled = isPaused || !(gameState === State.BALL_IN_FLIGHT && !isPlayerPitching() && !batterSwung || gameState === State.PITCHING_AIM || gameState === State.GAME_OVER);
+  document.getElementById("action").textContent = gameState === State.GAME_OVER ? "Play again" : setup ? "Swing / Throw" : isPlayerPitching() ? "Throw pitch" : "Swing!";
   document.getElementById("super").disabled = isPaused || playerMeter < 100 || superActive || ![State.PITCHING_AIM, State.PITCHING_READY].includes(gameState);
-  document.getElementById("super").textContent = superActive ? "Super armed!" : `${isTopInning ? "Ghost pitch" : "Fire bat"} · ${Math.floor(playerMeter)}%`;
-  document.getElementById("pitches").hidden = !isTopInning || setup;
+  document.getElementById("super").textContent = superActive ? "Super armed!" : `${isPlayerPitching() ? "Ghost pitch" : "Fire bat"} · ${Math.floor(playerMeter)}%`;
+  document.getElementById("pitches").hidden = !isPlayerPitching() || setup;
   document.querySelectorAll("[data-pitch]").forEach(b => b.classList.toggle("active", Number(b.dataset.pitch) === selectedPitchType));
   draw();
   requestAnimationFrame(gameLoop);

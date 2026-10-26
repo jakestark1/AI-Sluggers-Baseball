@@ -1,6 +1,6 @@
 # AI Sluggers Baseball
 
-A browser baseball game featuring animal all-stars, super-powered pitches and swings, and three-inning matches. Every at-bat starts with one ball and one strike.
+A browser baseball game featuring animal all-stars, super-powered pitches and swings, and three-inning matches. Every at-bat starts with one ball and one strike. Choose Home (pitch first, bat second) or Away (bat first, pitch second) before starting.
 
 ## Play locally
 
