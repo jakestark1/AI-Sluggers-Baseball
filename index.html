@@ -61,11 +61,16 @@
     @media (max-width:600px) { body { padding:8px; justify-content:flex-start; } button,select { padding:8px 10px; } }
     details[open] { position:fixed; bottom:8px; z-index:10; width:min(800px,calc(100% - 16px)); max-height:60dvh; overflow:auto; padding:12px; background:#1a252f; border:1px solid #587180; border-radius:8px; }
   @media (max-height: 500px) { h1 { font-size:20px; margin:0; } body > p:first-of-type { display:none; } body { grid-template-rows:auto auto minmax(0,1fr) auto auto auto auto; padding:4px; } button,select { padding:4px 8px; } .toolbar { margin:2px 0; gap:4px; } #instructions-bar { font-size:11px; } }
-  #team-choice { position:fixed; inset:0; margin:auto; width:min(460px,calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; padding:24px; border:2px solid #f1c40f; border-radius:16px; background:#1a252f; color:white; text-align:center; }
-    #team-choice::backdrop { background:rgba(5,14,22,.85); }
+  #team-choice, #game-guide { position:fixed; inset:0; margin:auto; width:min(460px,calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; padding:24px; border:2px solid #f1c40f; border-radius:16px; background:#1a252f; color:white; text-align:center; }
+    #team-choice::backdrop, #game-guide::backdrop { background:rgba(5,14,22,.85); }
     #team-choice h2 { margin-bottom:8px; } .team-options { display:flex; gap:12px; margin:20px 0; }
     .team-options button { flex:1; display:flex; flex-direction:column; gap:8px; align-items:center; padding:20px 8px; }
     .team-options strong { font-size:22px; color:#ffdf76; }
+  #game-guide { width:min(560px,calc(100% - 24px)); text-align:left; }
+    #game-guide h2, #guide-order { text-align:center; margin-bottom:12px; }
+    #game-guide ul { padding-left:20px; line-height:1.5; } #game-guide li { margin:8px 0; }
+    .guide-actions { display:flex; justify-content:center; gap:12px; margin-top:18px; }
+    #guide-start { background:#f1c40f; color:#172a35; font-weight:bold; }
   </style>
 </head>
 <body>
@@ -94,6 +99,19 @@
     <button id="choose-away"><strong>AWAY</strong><span>Bat first</span><span>Pitch second</span></button>
   </div>
   <button id="team-back">Back to characters</button>
+</dialog>
+<dialog id="game-guide" aria-labelledby="game-guide-title">
+  <h2 id="game-guide-title">How to play</h2>
+  <p id="guide-order"></p>
+  <ul>
+    <li><strong>The game:</strong> Three innings against the CPU, with extra innings for ties. Three outs switch sides.</li>
+    <li><strong>Fast counts:</strong> Every batter starts at 1 ball and 1 strike. Two more strikes mean an out; three more balls earn a walk.</li>
+    <li><strong>Batting:</strong> Press Space, tap the field, or use Swing. Watch the pitch and swing when the timing ring turns green. Let pitches outside the zone pass. Runners advance automatically.</li>
+    <li><strong>Pitching:</strong> Aim with your pointer or arrow keys. Choose Fastball, Curve, or Changeup with the buttons or keys 1–3. Press Space or Throw when the accuracy marker is centered.</li>
+    <li><strong>Super powers:</strong> Good plays charge your meter. When full, press E or the super button before a pitch to arm a ghost pitch or fire bat.</li>
+    <li><strong>Pause and sound:</strong> Press P or Escape, or use Pause. Sound toggles arcade effects.</li>
+  </ul>
+  <div class="guide-actions"><button id="guide-back">Change side</button><button id="guide-start">Start game</button></div>
 </dialog>
 <script>
 /* ==========================================================================
@@ -559,7 +577,17 @@ function openTeamChoice() {
   const dialog = document.getElementById("team-choice");
   if (!dialog.open) dialog.showModal();
 }
+let pendingTeam = "home";
+function showGameGuide(team) {
+  pendingTeam = team;
+  document.getElementById("team-choice").close();
+  document.getElementById("guide-order").textContent = team === "home"
+    ? "You're HOME: pitch first, then bat."
+    : "You're AWAY: bat first, then pitch.";
+  document.getElementById("game-guide").showModal();
+}
 function startMatch(team = "home") {
+  document.getElementById("game-guide").close();
   document.getElementById("team-choice").close();
   resetFullGame();
   playerIsHome = team === "home";
@@ -1837,8 +1865,11 @@ CHARACTERS.forEach(c => athlete.add(new Option(`${c.name} · ${c.role}`, c.id)))
 athlete.value = playerChar.id;
 athlete.onchange = () => { playerChar = CHARACTERS[Number(athlete.value)]; cpuChar = CHARACTERS[(playerChar.id + 1) % 5]; openTeamChoice(); };
 document.getElementById("start").onclick = () => { sound.init(); openTeamChoice(); };
-document.getElementById("choose-home").onclick = () => { sound.init(); startMatch("home"); };
-document.getElementById("choose-away").onclick = () => { sound.init(); startMatch("away"); };
+document.getElementById("choose-home").onclick = () => { sound.init(); showGameGuide("home"); };
+document.getElementById("choose-away").onclick = () => { sound.init(); showGameGuide("away"); };
+document.getElementById("guide-start").onclick = () => { sound.init(); startMatch(pendingTeam); };
+document.getElementById("guide-back").onclick = () => { document.getElementById("game-guide").close(); openTeamChoice(); };
+document.getElementById("game-guide").addEventListener("cancel", e => { e.preventDefault(); document.getElementById("game-guide").close(); openTeamChoice(); });
 document.getElementById("team-back").onclick = () => document.getElementById("team-choice").close();
 document.getElementById("action").onclick = () => { sound.init(); if (!isPaused && gameState !== State.SELECT_CHAR) { const old = {...mouse}; mouse.x = -1; mouse.y = -1; handlePrimaryAction(); Object.assign(mouse, old); } };
 document.getElementById("pause").onclick = togglePause;
