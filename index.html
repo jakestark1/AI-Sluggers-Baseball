@@ -71,6 +71,14 @@
     #game-guide ul { padding-left:20px; line-height:1.5; } #game-guide li { margin:8px 0; }
     .guide-actions { display:flex; justify-content:center; gap:12px; margin-top:18px; }
     #guide-start { background:#f1c40f; color:#172a35; font-weight:bold; }
+  /* Reserve feedback space so new play results cannot resize the field. */
+    #status { width:min(800px,100%); min-height:2.8em; height:2.8em; line-height:1.4; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
+    /* Keep the field size stable as meter percentages and power names change. */
+    .toolbar[aria-label="Game controls"] { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:36px 36px; gap:6px; }
+    .toolbar[aria-label="Game controls"] > button { min-width:0; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:4px 6px; }
+    #pitches { grid-column:1 / -1; display:flex; gap:6px; justify-content:center; }
+    #pitches[hidden] { display:none; }
+    #pitches button { min-width:0; padding:4px 8px; }
   </style>
 </head>
 <body>
@@ -108,7 +116,7 @@
     <li><strong>Fast counts:</strong> Every batter starts at 1 ball and 1 strike. Two more strikes mean an out; three more balls earn a walk.</li>
     <li><strong>Batting:</strong> Press Space, tap the field, or use Swing. Watch the pitch and swing when the timing ring turns green. Let pitches outside the zone pass. Runners advance automatically.</li>
     <li><strong>Pitching:</strong> Aim with your pointer or arrow keys. Choose Fastball, Curve, or Changeup with the buttons or keys 1–3. Press Space or Throw when the accuracy marker is centered.</li>
-    <li><strong>Super powers:</strong> Good plays charge your meter. When full, press E or the super button before a pitch. A random Fire, Thunder, or Meteor Bat gives 50% homerun, 40% double, 10% single on a hittable pitch. A random Ghost, Tornado, or Frost Ball homes into the zone: 50% swinging strike, 35% out, 15% single. Swings fully outside the zone always miss; a batting power is consumed on your swing. If both sides use a power on the same pitch, the pitching power decides the outcome.</li>
+    <li><strong>Super powers:</strong> Good plays charge your meter. When full, press E or the super button before a pitch. Batting randomly arms a Fire, Thunder, or Meteor Bat for a powered hit. Pitching randomly arms a Ghost, Tornado, or Frost Ball that homes into the zone. Swings fully outside the zone always miss; a batting power is consumed on your swing. If both sides use a power on the same pitch, the pitching power decides the outcome.</li>
     <li><strong>Pause and sound:</strong> Press P or Escape, or use Pause. Sound toggles arcade effects.</li>
   </ul>
   <div class="guide-actions"><button id="guide-back">Change side</button><button id="guide-start">Start game</button></div>
@@ -1980,7 +1988,9 @@ function gameLoop(now) {
   document.getElementById("action").disabled = isPaused || !(gameState === State.BALL_IN_FLIGHT && !isPlayerPitching() && !batterSwung || gameState === State.PITCHING_AIM || gameState === State.GAME_OVER);
   document.getElementById("action").textContent = gameState === State.GAME_OVER ? "Play again" : setup ? "Swing / Throw" : isPlayerPitching() ? "Throw pitch" : "Swing!";
   document.getElementById("super").disabled = isPaused || playerMeter < 100 || superActive || ![State.PITCHING_AIM, State.PITCHING_READY].includes(gameState);
-  document.getElementById("super").textContent = superActive && activePower ? `${activePower.symbol} ${activePower.name}` : `Random super · ${Math.floor(playerMeter)}%`;
+  document.getElementById("super").textContent = superActive && activePower ? `${activePower.symbol} ${activePower.name}` : `Super · ${Math.floor(playerMeter)}%`;
+  document.getElementById("super").title = superActive && activePower ? `${activePower.name} armed` : `Random super power: ${Math.floor(playerMeter)}% charged. Press E when ready.`;
+  document.getElementById("super").setAttribute("aria-label", document.getElementById("super").title);
   document.getElementById("pitches").hidden = !isPlayerPitching() || setup;
   document.querySelectorAll("[data-pitch]").forEach(b => b.classList.toggle("active", Number(b.dataset.pitch) === selectedPitchType));
   draw();
