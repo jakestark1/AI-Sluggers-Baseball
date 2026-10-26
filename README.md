@@ -17,3 +17,9 @@ Open `index.html` in a browser, or run `python -m http.server 8000` from this di
 ## Publish with GitHub Pages
 
 In this repository, open Settings → Pages. Choose **Deploy from a branch**, then **main** and **/ (root)**, and Save. After deployment, the game will be available at https://jakestark1.github.io/AI-Sluggers-Baseball/ .
+
+## Super powers and contact
+
+Activation randomly chooses Fire/Thunder/Meteor Bat or Ghost/Tornado/Frost Ball. The powers in each group share outcome odds; names and glow colors vary. Batting: 50% home run, 40% double, 10% single. Pitching: 50% swinging strike, 35% ground out, 15% single. Powered pitches home into the zone. Pitching power takes precedence if both sides activate powers on the same pitch. A batting power is consumed on the swing.
+
+A ball completely outside the strike-zone rectangle, including its 21-pixel plate radius, always produces a swing and miss. A ball touching an edge remains hittable. This rule applies to both batters and overrides batting powers.
